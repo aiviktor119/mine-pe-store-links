@@ -98,21 +98,19 @@
         .btn-huawei { background-color: #cf0a2c; color: white; }
         .btn-apple { background-color: #000000; color: white; }
 
-        /* Стиль для статуса "Скоро" (Soon) */
+        /* Стиль для статуса "Скоро" */
         .btn.soon {
             background-color: var(--disabled-color) !important;
             color: #ffffff !important;
             cursor: not-allowed;
             position: relative;
+            pointer-events: none; /* Полностью отключаем кликабельность */
         }
         .btn.soon::after {
             content: ' (Скоро)';
             font-weight: normal;
             opacity: 0.8;
             font-size: 14px;
-        }
-        .btn.soon:active {
-            transform: none;
         }
 
         .footer {
@@ -130,21 +128,26 @@
         }
     </style>
     
-    <script type="text/javascript" >
-       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-       m[i].l=1*new Date();
-       for (var j = 0; j < e.length; j++) {if (m[e][j] === r) { return; }}
-       k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    <!-- Инициализация Яндекс Метрики (Замени 99999999 на свой номер счетчика) -->
+    <!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=110417646', 'ym');
 
-       ym(99999999, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true });
-    </script>
+    ym(110417646, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/110417646" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
 </head>
 <body>
 
 <div class="container">
-    <div class="logo">A</div>
-    <h1 id="app-title">Название Приложения</h1>
+    <div class="logo">M</div>
+    <h1 id="app-title">ModFlow: Minecraft PE</h1>
     <p class="subtitle">Выберите магазин под ваше устройство или дождитесь автоматического перехода</p>
     
     <div id="auto-redirect-msg">Определяем ваше устройство...</div>
@@ -164,8 +167,8 @@
     // ==========================================
     const CONFIG = {
         google: {
-            url: "https://play.google.com/store/apps/details?id=com.modflow.minecraft",
-            isSoon: false // true = покажет (Скоро), false = включит прямую ссылку
+            url: "https://play.google.com/store/apps/details?id=ccom.modflow.minecraft",
+            isSoon: false // Поменяй на false, когда выйдешь из ревью
         },
         huawei: {
             url: "https://appgallery.huawei.com/app/C123456789",
@@ -175,8 +178,8 @@
             url: "https://apps.apple.com/app/id1234567890",
             isSoon: true 
         },
-        // Ссылка-заглушка для редиректа, если приложение ещё в статусе isSoon
-        fallbackUrl: "https://t.me/your_telegram_channel" 
+        // Задержка перед автоматическим редиректом в миллисекундах (4000 мс = 4 секунды)
+        redirectTimeout: 4000 
     };
 
     // ==========================================
@@ -187,7 +190,6 @@
     
     document.getElementById('traffic-source').innerText = "Канал: " + source;
 
-    // Отправка цели в аналитику Яндекс Метрики
     if (typeof ym === "function") {
         ym(99999999, 'reachGoal', 'visit_from_' + source);
     }
@@ -198,45 +200,63 @@
     const msgBlock = document.getElementById('auto-redirect-msg');
 
     function setupButtons() {
-        if (CONFIG.google.isSoon) { btnGoogle.classList.add('soon'); btnGoogle.href = CONFIG.fallbackUrl; } 
+        if (CONFIG.google.isSoon) { btnGoogle.classList.add('soon'); btnGoogle.removeAttribute('href'); } 
         else { btnGoogle.href = CONFIG.google.url; }
 
-        if (CONFIG.huawei.isSoon) { btnHuawei.classList.add('soon'); btnHuawei.href = CONFIG.fallbackUrl; } 
+        if (CONFIG.huawei.isSoon) { btnHuawei.classList.add('soon'); btnHuawei.removeAttribute('href'); } 
         else { btnHuawei.href = CONFIG.huawei.url; }
 
-        if (CONFIG.apple.isSoon) { btnApple.classList.add('soon'); btnApple.href = CONFIG.fallbackUrl; } 
+        if (CONFIG.apple.isSoon) { btnApple.classList.add('soon'); btnApple.removeAttribute('href'); } 
         else { btnApple.href = CONFIG.apple.url; }
     }
 
     function handleAutoRedirect() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        let target = null;
+        let targetKey = null;
+        let storeName = "";
 
+        // 1. Пытаемся понять ОС пользователя
         if (/android/i.test(userAgent)) {
-            // Распознаем Huawei / Honor девайсы без Google сервисов
             if (/huawei|honor/i.test(userAgent.toLowerCase())) {
-                target = CONFIG.huawei.isSoon ? 'fallback' : 'huawei';
-                msgBlock.innerText = CONFIG.huawei.isSoon ? "Перенаправляем в сообщество (в AppGallery еще на проверке)..." : "Перенаправляем в AppGallery...";
+                targetKey = 'huawei';
+                storeName = 'AppGallery';
             } else {
-                target = CONFIG.google.isSoon ? 'fallback' : 'google';
-                msgBlock.innerText = CONFIG.google.isSoon ? "Перенаправляем в сообщество (в Google Play еще на проверке)..." : "Перенаправляем в Google Play...";
+                targetKey = 'google';
+                storeName = 'Google Play';
             }
         } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-            target = CONFIG.apple.isSoon ? 'fallback' : 'apple';
-            msgBlock.innerText = CONFIG.apple.isSoon ? "Перенаправляем в сообщество (в App Store еще на проверке)..." : "Перенаправляем в App Store...";
-        } else {
+            targetKey = 'apple';
+            storeName = 'App Store';
+        }
+
+        // 2. Если устройство не определили (например, зашли с ПК) — просто ждем действий пользователя
+        if (!targetKey) {
             msgBlock.innerText = "Выберите магазин под ваше устройство";
             return;
         }
 
-        // Редирект с небольшой задержкой (1.5 сек) для плавности
-        setTimeout(() => {
-            if (target === 'fallback') {
-                window.location.href = CONFIG.fallbackUrl;
-            } else if (target && CONFIG[target]) {
-                window.location.href = CONFIG[target].url;
+        // 3. Если определили, но приложение на проверке (isSoon: true) — отменяем авто-редирект
+        if (CONFIG[targetKey].isSoon) {
+            msgBlock.innerText = `Приложение в ${storeName} ещё на проверке. Скоро всё будет!`;
+            return;
+        }
+
+        // 4. Если приложение доступно — запускаем таймер на 4 секунды
+        msgBlock.innerText = `Перенаправляем в ${storeName} через 4 сек...`;
+        
+        let secondsLeft = 4;
+        const countdownInterval = setInterval(() => {
+            secondsLeft--;
+            if (secondsLeft > 0) {
+                msgBlock.innerText = `Перенаправляем в ${storeName} через ${secondsLeft} сек...`;
+            } else {
+                clearInterval(countdownInterval);
             }
-        }, 1500);
+        }, 1000);
+
+        setTimeout(() => {
+            window.location.href = CONFIG[targetKey].url;
+        }, CONFIG.redirectTimeout);
     }
 
     setupButtons();
