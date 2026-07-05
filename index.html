@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка приложения</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-muted: #666666;
+            --primary-color: #007aff;
+            --disabled-color: #aeaeae;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: var(--primary-color);
+            border-radius: 18px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .store-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.1s, background-color 0.2s;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-google { background-color: #202124; color: white; }
+        .btn-huawei { background-color: #cf0a2c; color: white; }
+        .btn-apple { background-color: #000000; color: white; }
+
+        /* Стиль для статуса "Скоро" (Soon) */
+        .btn.soon {
+            background-color: var(--disabled-color) !important;
+            color: #ffffff !important;
+            cursor: not-allowed;
+            position: relative;
+        }
+        .btn.soon::after {
+            content: ' (Скоро)';
+            font-weight: normal;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        .btn.soon:active {
+            transform: none;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+        
+        #auto-redirect-msg {
+            font-size: 13px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 500;
+            min-height: 20px;
+        }
+    </style>
+    
+    <script type="text/javascript" >
+       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+       m[i].l=1*new Date();
+       for (var j = 0; j < e.length; j++) {if (m[e][j] === r) { return; }}
+       k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+       ym(99999999, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true });
+    </script>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo">A</div>
+    <h1 id="app-title">Название Приложения</h1>
+    <p class="subtitle">Выберите магазин под ваше устройство или дождитесь автоматического перехода</p>
+    
+    <div id="auto-redirect-msg">Определяем ваше устройство...</div>
+
+    <div class="store-buttons">
+        <a id="link-google" class="btn btn-google" href="#">Google Play</a>
+        <a id="link-huawei" class="btn btn-huawei" href="#">AppGallery</a>
+        <a id="link-apple" class="btn btn-apple" href="#">App Store</a>
+    </div>
+
+    <div class="footer" id="traffic-source"></div>
+</div>
+
+<script>
+    // ==========================================
+    // КОНФИГУРАЦИЯ ССЫЛОК И СТАТУСОВ "SOON"
+    // ==========================================
+    const CONFIG = {
+        google: {
+            url: "https://play.google.com/store/apps/details?id=com.modflow.minecraft",
+            isSoon: false // true = покажет (Скоро), false = включит прямую ссылку
+        },
+        huawei: {
+            url: "https://appgallery.huawei.com/app/C123456789",
+            isSoon: true 
+        },
+        apple: {
+            url: "https://apps.apple.com/app/id1234567890",
+            isSoon: true 
+        },
+        // Ссылка-заглушка для редиректа, если приложение ещё в статусе isSoon
+        fallbackUrl: "https://t.me/your_telegram_channel" 
+    };
+
+    // ==========================================
+    // ЛОГИКА ОПРЕДЕЛЕНИЯ КАНАЛА И УСТРОЙСТВА
+    // ==========================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const source = urlParams.get('from') || 'direct'; 
+    
+    document.getElementById('traffic-source').innerText = "Канал: " + source;
+
+    // Отправка цели в аналитику Яндекс Метрики
+    if (typeof ym === "function") {
+        ym(99999999, 'reachGoal', 'visit_from_' + source);
+    }
+
+    const btnGoogle = document.getElementById('link-google');
+    const btnHuawei = document.getElementById('link-huawei');
+    const btnApple = document.getElementById('link-apple');
+    const msgBlock = document.getElementById('auto-redirect-msg');
+
+    function setupButtons() {
+        if (CONFIG.google.isSoon) { btnGoogle.classList.add('soon'); btnGoogle.href = CONFIG.fallbackUrl; } 
+        else { btnGoogle.href = CONFIG.google.url; }
+
+        if (CONFIG.huawei.isSoon) { btnHuawei.classList.add('soon'); btnHuawei.href = CONFIG.fallbackUrl; } 
+        else { btnHuawei.href = CONFIG.huawei.url; }
+
+        if (CONFIG.apple.isSoon) { btnApple.classList.add('soon'); btnApple.href = CONFIG.fallbackUrl; } 
+        else { btnApple.href = CONFIG.apple.url; }
+    }
+
+    function handleAutoRedirect() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        let target = null;
+
+        if (/android/i.test(userAgent)) {
+            // Распознаем Huawei / Honor девайсы без Google сервисов
+            if (/huawei|honor/i.test(userAgent.toLowerCase())) {
+                target = CONFIG.huawei.isSoon ? 'fallback' : 'huawei';
+                msgBlock.innerText = CONFIG.huawei.isSoon ? "Перенаправляем в сообщество (в AppGallery еще на проверке)..." : "Перенаправляем в AppGallery...";
+            } else {
+                target = CONFIG.google.isSoon ? 'fallback' : 'google';
+                msgBlock.innerText = CONFIG.google.isSoon ? "Перенаправляем в сообщество (в Google Play еще на проверке)..." : "Перенаправляем в Google Play...";
+            }
+        } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+            target = CONFIG.apple.isSoon ? 'fallback' : 'apple';
+            msgBlock.innerText = CONFIG.apple.isSoon ? "Перенаправляем в сообщество (в App Store еще на проверке)..." : "Перенаправляем в App Store...";
+        } else {
+            msgBlock.innerText = "Выберите магазин под ваше устройство";
+            return;
+        }
+
+        // Редирект с небольшой задержкой (1.5 сек) для плавности
+        setTimeout(() => {
+            if (target === 'fallback') {
+                window.location.href = CONFIG.fallbackUrl;
+            } else if (target && CONFIG[target]) {
+                window.location.href = CONFIG[target].url;
+            }
+        }, 1500);
+    }
+
+    setupButtons();
+    handleAutoRedirect();
+</script>
+</body>
+</html>
